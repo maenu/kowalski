@@ -1,0 +1,27 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+	<id>distribution</id>
+	<formats>
+		<format>tar.gz</format>
+		<format>tar.bz2</format>
+		<format>zip</format>
+	</formats>
+	<fileSets>
+		<fileSet>
+			<directory>${project.basedir}${file.separator}..${file.separator}kowalski-call-graph-batch${file.separator}target</directory>
+			<includes>
+				<include>*-shaded.jar</include>
+			</includes>
+			<outputDirectory>lib</outputDirectory>
+		</fileSet>
+		<fileSet>
+			<directory>${project.basedir}${file.separator}src${file.separator}main${file.separator}resources${file.separator}bin</directory>
+			<outputDirectory>bin</outputDirectory>
+		</fileSet>
+		<fileSet>
+			<directory>${project.basedir}${file.separator}src${file.separator}main${file.separator}resources${file.separator}configuration</directory>
+			<outputDirectory>configuration</outputDirectory>
+		</fileSet>
+	</fileSets>
+</assembly>

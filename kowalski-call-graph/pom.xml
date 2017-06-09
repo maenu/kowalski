@@ -1,0 +1,50 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>ch.unibe.scg</groupId>
+	<artifactId>kowalski-call-graph</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<properties>
+		<java.version>1.8</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<maven.compiler.source>${java.version}</maven.compiler.source>
+		<maven.compiler.target>${java.version}</maven.compiler.target>
+		<kowalski.version>0.0.1-SNAPSHOT</kowalski.version>
+	</properties>
+
+	<modules>
+		<module>kowalski-call-graph-analysis</module>
+		<module>kowalski-call-graph-batch</module>
+		<module>kowalski-call-graph-distribution</module>
+	</modules>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>ch.unibe.scg</groupId>
+				<artifactId>kowalski</artifactId>
+				<version>${kowalski.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>ch.unibe.scg</groupId>
+				<artifactId>kowalski-call-graph-analysis</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ch.unibe.scg</groupId>
+				<artifactId>kowalski-call-graph-batch</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>ch.unibe.scg</groupId>
+				<artifactId>kowalski-call-graph-distribution</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+</project>

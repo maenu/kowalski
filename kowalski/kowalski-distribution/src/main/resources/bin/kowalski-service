@@ -1,0 +1,119 @@
+#!/bin/bash
+
+# http://stackoverflow.com/a/246128/656878
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+export KOWALSKI_HOME="$DIR/.."
+SERVICE=`basename "$0"`
+PID_FILE="${KOWALSKI_HOME}/data/PID"
+
+if [ ! -d "${KOWALSKI_HOME}/data/" ]; then
+    mkdir "${KOWALSKI_HOME}/data/"
+fi
+
+if [ ! -d "${KOWALSKI_HOME}/log/" ]; then
+    mkdir "${KOWALSKI_HOME}/log/"
+fi
+
+status() {
+  if [ -f "${PID_FILE}" ] ; then
+    PID=`cat "${PID_FILE}"`
+    # check to see if it's gone...
+    ps -p ${PID} > /dev/null
+    if [ $? -eq 0 ] ; then
+      return 0
+    else
+      rm "${PID_FILE}"
+      return 3
+    fi
+  fi
+  return 3
+}
+
+stop() {
+  if [ -f "${PID_FILE}" ] ; then
+    PID=`cat "${PID_FILE}"`
+    kill $@ ${PID} > /dev/null
+  fi
+  for i in 1 2 3 4 5 ; do
+    status
+    if [ $? -ne 0 ] ; then
+      return 0
+    fi
+    sleep 1
+  done
+  echo "Could not stop process ${PID}"
+  return 1
+}
+
+start() {
+
+  status
+  if [ $? -eq 0 ] ; then
+    echo "Already running."
+    return 1
+  fi
+  
+nohup java -Dmaven.settings="$KOWALSKI_HOME/configuration/settings.xml" -classpath "$KOWALSKI_HOME/configuration:$KOWALSKI_HOME/lib/*" ch.unibe.scg.kowalski.collector.Application "$1" "$2"  &> "$KOWALSKI_HOME/log/start.log" &
+
+  echo $! > "${PID_FILE}"
+
+  # check to see if stays up...
+  sleep 1
+  status
+  if [ $? -ne 0 ] ; then
+    echo "Could not start ${SERVICE}"
+    return 1
+  fi
+  echo "${SERVICE} is now running (${PID})"
+  return 0
+}
+
+case $1 in
+  start)
+    echo "Starting ${SERVICE}"
+    start "$2" "$3"
+    exit $?
+  ;;
+
+  force-stop)
+    echo "Forcibly Stopping ${SERVICE}"
+    stop -9
+    exit $?
+  ;;
+
+  stop)
+    echo "Gracefully Stopping ${SERVICE}"
+    stop
+    exit $?
+  ;;
+
+  restart)
+    echo "Restarting ${SERVICE}"
+    stop
+    start
+    exit $?
+  ;;
+
+  status)
+    status
+    rc=$?
+    if [ $rc -eq 0 ] ; then
+      echo "${SERVICE} is running (${PID})"
+    else
+      echo "${SERVICE} is stopped"
+    fi
+    exit $rc
+  ;;
+
+  *)
+    echo "Usage: $0 {start|stop|restart|force-stop|status}" >&2
+    exit 2
+  ;;
+esac
