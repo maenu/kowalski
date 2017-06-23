@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>
+			title
+		</title>
+		<link rel="stylesheet" href="https://meyerweb.com/eric/tools/css/reset/reset.css" />
+		<style>
+			html, body {
+				height: 100%;
+				width: 100%;
+			}
+			body {
+				display: flex;
+				flex-direction: column;
+				font-family: sans-serif;
+				font-weight: bold;
+				font-size: 2em;
+			}
+			body > .row {
+				display: flex;
+				flex-direction: row;
+			}
+			body > .row:first-child {
+				flex-grow: 0;
+			}
+			body > .row:nth-child(2) {
+				flex-grow: 1;
+			}
+			.queue {
+				position: relative;
+				flex-grow: 1;
+			}
+			.queue > div {
+				position: absolute;
+				bottom: 1em;
+				width: 100%;
+				max-height: calc(100% - 2em);
+			}
+			h2 {
+				opacity: 0.5;
+			}
+			h2, h3 {
+				text-align: center;
+				width: 100%;
+			}
+			div.added > h3 {
+				margin-top: -1em;
+			}
+			div.added {
+				background: #CCCCCC;
+			}
+			div.acknowledged > h3 {
+				position: absolute;
+			}
+		</style>
+		<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous" type="text/javascript">
+</script>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/json2/20160511/json2.min.js">
+</script>
+		<script type="text/javascript" src="https://github.com/rhuss/jolokia/releases/download/v1.3.6/jolokia-min.js">
+</script>
+		<script type="text/javascript" src="https://github.com/rhuss/jolokia/releases/download/v1.3.6/jolokia-simple-min.js">
+</script>
+		<script type="text/javascript">
+			$(document).ready(function () {
+				var queues = {
+					matchVersion: {
+						id: "org.apache.activemq.artemis:address=\"jms.queue.matchVersion\",brokerName=\"0.0.0.0\",module=Core,name=\"jms.queue.matchVersion\",serviceType=Queue,type=Broker",
+						added: 0,
+						acknowledged: 0
+					},
+					dependency: {
+						id: "org.apache.activemq.artemis:address=\"jms.queue.dependency\",brokerName=\"0.0.0.0\",module=Core,name=\"jms.queue.dependency\",serviceType=Queue,type=Broker",
+						added: 0,
+						acknowledged: 0
+					},
+					output: {
+						id: "org.apache.activemq.artemis:address=\"jms.queue.output\",brokerName=\"0.0.0.0\",module=Core,name=\"jms.queue.output\",serviceType=Queue,type=Broker",
+						added: 0,
+						acknowledged: 0
+					}
+				};
+				var jolokia = new Jolokia("http://localhost:8778/jolokia");
+				var update = function (name) {
+					var queue = queues[name];
+					jolokia.request({
+						type: "read",
+						mbean: queue.id
+					}, {
+						success: function (response) {
+							queue.added = response.value.MessagesAdded;
+							queue.acknowledged = response.value.MessagesAcknowledged;
+						}
+					});
+				};
+				setInterval(function () {
+					Object.keys(queues).forEach(update);
+					var max = Math.max.apply(Math, Object.keys(queues).map(function (name) {
+						return queues[name].added;
+					}));
+					Object.keys(queues).forEach(function (name) {
+						var queue = queues[name];
+						var added = queue.added / max;
+						var acknowledged = queue.acknowledged / max;
+						$("#" + name + " .added").css('height', 'calc( ' + added + ' * (100% - 2em)');
+						$("#" + name + " .acknowledged").css('height', 'calc( ' + acknowledged + ' * (100% - 2em)');
+						$("#" + name + " .added h3").text(queue.added);
+						$("#" + name + " .acknowledged h3").text(queue.acknowledged);
+					});
+				}, 1000);
+				Object.keys(queues).forEach(update);
+			});
+		</script>
+	</head>
+	<body>
+		<div class="row">
+			<h2>API client artifacts</h2>
+			<h2>API client versions</h2>
+			<h2>downloaded versions</h2>
+		</div>
+		<div class="row">
+			<div class="queue" id="matchVersion">
+				<div class="added">
+					<h3>0</h3>
+				</div>
+				<div class="acknowledged" style="background: #4395F6;">
+					<h3>0</h3>
+				</div>
+			</div>
+			<div class="queue" id="dependency">
+				<div class="added">
+					<h3>0</h3>
+				</div>
+				<div class="acknowledged" style="background: #4395F6;">
+					<h3>0</h3>
+				</div>
+			</div>
+			<div class="queue" id="output">
+				<div class="added">
+					<h3>0</h3>
+				</div>
+				<div class="acknowledged" style="background: #E78DEE;">
+					<h3>0</h3>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

@@ -11,8 +11,22 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 if [ -z "$1" ]
 then
-	echo "Missing SolrQuery argument"
+	echo "Missing SolrQuery argument 1"
 	exit 1
+fi
+
+if [ -z "$2" ]
+then
+	echo "Missing groupId filter argument 2"
+	exit 1
+fi
+
+# set groupId filter
+if [[ "$OSTYPE" == "darwin"* ]]
+then
+	sed -i '' "6 s+.*+ch.unibe.scg.kowalski.callgraph.batch.groupIdFilter=$2+" "$DIR/kowalski-call-graph/configuration/application.properties"
+else
+	sed -i "6 s+.*+ch.unibe.scg.kowalski.callgraph.batch.groupIdFilter=$2+" "$DIR/kowalski-call-graph/configuration/application.properties"
 fi
 
 "$DIR/kowalski-jms-broker/bin/artemis-service" start

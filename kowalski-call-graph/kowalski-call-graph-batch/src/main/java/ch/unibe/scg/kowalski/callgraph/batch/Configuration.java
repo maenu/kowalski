@@ -65,6 +65,8 @@ public class Configuration {
 	private String lastModifiedCache;
 	@Value("${" + PACKAGE + ".neo4j.path}")
 	private String neo4jPath;
+	@Value("${" + PACKAGE + ".groupIdFilter:#{\".*\"}}")
+	private String groupIdFilter;
 	@Autowired
 	private JobBuilderFactory jobBuilderFactory;
 	@Autowired
@@ -90,7 +92,7 @@ public class Configuration {
 		return () -> {
 			ItemReader<Page<Artifact, Artifact>> reader = new Reader(jmsTemplate, new ActiveMQQueue(this.output));
 			ItemProcessor<Page<Artifact, Artifact>, Result> processor = new Processor(new AnalysisRunner(this.timeout),
-					jreArtifact, new File(this.lastModifiedCache));
+					jreArtifact, new File(this.lastModifiedCache), this.groupIdFilter);
 			ItemWriter<Result> writer = new Writer(graphDatabaseService);
 			Step step = this.stepBuilderFactory.get("analysis").<Page<Artifact, Artifact>, Result>chunk(1)
 					.faultTolerant().skipPolicy(new LoggingAlwaysSkipItemSkipPolicy()).noRollback(Throwable.class)

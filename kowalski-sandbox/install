@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# http://stackoverflow.com/a/246128/656878
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+cd "$DIR"
+
+# install jmx agent
+curl https://repo1.maven.org/maven2/org/jolokia/jolokia-jvm/1.3.6/jolokia-jvm-1.3.6-agent.jar -o jolokia-jvm-1.3.6-agent.jar
+
+# install jms broker
+curl http://www-us.apache.org/dist/activemq/activemq-artemis/1.5.5/apache-artemis-1.5.5-bin.tar.gz -o apache-artemis-1.5.5-bin.tar.gz
+tar xzf apache-artemis-1.5.5-bin.tar.gz
+rm apache-artemis-1.5.5-bin.tar.gz
+apache-artemis-1.5.5/bin/artemis create --user admin --password admin --role admin --allow-anonymous "$DIR/kowalski-jms-broker"
+# configure jmx
+if [[ "$OSTYPE" == "darwin"* ]]
+then
+	sed -i '' "31 s+.*+if [ \"\$1\" = \"run\" ]; then+" kowalski-jms-broker/etc/artemis.profile
+	sed -i '' "32 s+.*+  JAVA_ARGS=\"\$JAVA_ARGS -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.port=1099 -Dcom.sun.management.jmxremote.rmi.port=1098 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -javaagent:$DIR/jolokia-jvm-1.3.6-agent.jar\"+" kowalski-jms-broker/etc/artemis.profile
+	sed -i '' "33 s+.*+fi+" kowalski-jms-broker/etc/artemis.profile
+else
+	sed -i "31 s+.*+if [ \"\$1\" = \"run\" ]; then+" kowalski-jms-broker/etc/artemis.profile
+	sed -i "32 s+.*+  JAVA_ARGS=\"\$JAVA_ARGS -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.port=1099 -Dcom.sun.management.jmxremote.rmi.port=1098 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -javaagent:$DIR/jolokia-jvm-1.3.6-agent.jar\"+" kowalski-jms-broker/etc/artemis.profile
+	sed -i "33 s+.*+fi+" kowalski-jms-broker/etc/artemis.profile
+fi
+
+# install database
+curl https://neo4j.com/artifact.php?name=neo4j-community-3.0.5-unix.tar.gz -o neo4j-community-3.0.5-unix.tar.gz
+tar xzf neo4j-community-3.0.5-unix.tar.gz
+rm neo4j-community-3.0.5-unix.tar.gz
+# set db
+rm neo4j-community-3.0.5/data/databases/kowalski-call-graph.db
+ln -s "$DIR/kowalski-call-graph/data/db" neo4j-community-3.0.5/data/databases/kowalski-call-graph.db
+if [[ "$OSTYPE" == "darwin"* ]]
+then
+	sed -i '' "8,8 s+.*+dbms.active_database=kowalski-call-graph.db+" neo4j-community-3.0.5/conf/neo4j.conf
+else
+	sed -i "8,8 s+.*+dbms.active_database=kowalski-call-graph.db+" neo4j-community-3.0.5/conf/neo4j.conf
+fi
+
+# install kowalski
+curl -L https://ndownloader.figshare.com/files/8730232 -o kowalski-distribution-0.0.1-SNAPSHOT-distribution.tar.gz
+tar xzf kowalski-distribution-0.0.1-SNAPSHOT-distribution.tar.gz
+rm kowalski-distribution-0.0.1-SNAPSHOT-distribution.tar.gz
+mv kowalski-distribution-0.0.1-SNAPSHOT kowalski
+
+# install kowalski-call-graph
+curl -L https://ndownloader.figshare.com/files/8730373 -o kowalski-call-graph-distribution-0.0.1-SNAPSHOT-distribution.tar.gz
+tar xzf kowalski-call-graph-distribution-0.0.1-SNAPSHOT-distribution.tar.gz
+rm kowalski-call-graph-distribution-0.0.1-SNAPSHOT-distribution.tar.gz
+mv kowalski-call-graph-distribution-0.0.1-SNAPSHOT kowalski-call-graph

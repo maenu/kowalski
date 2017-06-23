@@ -30,11 +30,14 @@ public class Processor implements ItemProcessor<Page<Artifact, Artifact>, Result
 	private AnalysisRunner analysisRunner;
 	private Artifact analysisJreArtifact;
 	private LastModified lastModified;
+	private String groupIdFilter;
 
-	public Processor(AnalysisRunner analysisRunner, Artifact analysisJreArtifact, File lastModifiedCache) {
+	public Processor(AnalysisRunner analysisRunner, Artifact analysisJreArtifact, File lastModifiedCache,
+			String groupIdFilter) {
 		this.analysisRunner = analysisRunner;
 		this.analysisJreArtifact = analysisJreArtifact;
 		this.lastModified = new LastModified(lastModifiedCache);
+		this.groupIdFilter = groupIdFilter;
 	}
 
 	@Override
@@ -47,6 +50,20 @@ public class Processor implements ItemProcessor<Page<Artifact, Artifact>, Result
 		Set<Method> methods = this.extractAllMethods(data);
 		Set<Class> classes = this.extractAllClasses(methods);
 		Map<Class, Artifact> classArtifacts = this.mapArtifactToClasses(classPathArtifacts, classes);
+		// filter artifacts
+		Map<Class, Artifact> invokedClassArtifacts = classArtifacts.entrySet().stream()
+				.filter(entry -> entry.getValue().getGroupId().matches(this.groupIdFilter))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		data = data.entrySet().stream().map(entry -> {
+			entry.setValue(entry.getValue().stream()
+					.filter(invocation -> invokedClassArtifacts.containsKey(invocation.getMethod().getClazz()))
+					.collect(Collectors.toSet()));
+			return entry;
+		}).filter(entry -> !entry.getValue().isEmpty())
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		methods = this.extractAllMethods(data);
+		classes = this.extractAllClasses(methods);
+		classArtifacts = this.mapArtifactToClasses(classPathArtifacts, classes);
 		return new Result(artifact, data, classArtifacts, classes, methods);
 	}
 
