@@ -13,4 +13,4 @@ Contains an example call-graph analysis, see its own README.
 ## kowalski-sandbox
 
 Contains a playground environment for KOWALSKI, see its own README.
-Binaries and dataset on [Figshare](https://figshare.com/account/home#/projects/22756).
+Binaries and dataset on [Figshare](https://figshare.com/projects/KOWALSKI_ICSME_Tools_2017/22756).
